@@ -26,7 +26,7 @@ void computeOverlay(std::vector<uint8_t>& overlay, const std::vector<uint8_t>& b
                 double channel_alpha =
                     (result[idx + c] - base[idx + c]) /
                     (255.0 * (result[idx + c] > base[idx + c] ? 1.0 : -1.0));
-                alpha = std::max(alpha, static_cast<uint8_t>(std::clamp(channel_alpha * 2.0 * 255.0+1.0, 0.0, 255.0)));
+                alpha = std::max(alpha, static_cast<uint8_t>(std::clamp(channel_alpha * 2.0 * 255.0, 0.0, 255.0)));
             }
             else
                 alpha = 0;
@@ -38,7 +38,7 @@ void computeOverlay(std::vector<uint8_t>& overlay, const std::vector<uint8_t>& b
             for (int c = 0; c < 3; c++)
             { // R, G, B channels
                 overlay[idx + c] = static_cast<uint8_t>(
-                    std::clamp((result[idx + c] - (1.0 - alpha / 255.0) * base[idx + c]) / (alpha / 255.0), 0.0, 255.0));
+                    std::clamp((result[idx + c] - (1.0 - alpha / 255.0) * base[idx + c]) / (alpha / 255.0)+0.5, 0.0, 255.0));
             }
         }
 
