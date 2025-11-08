@@ -16,27 +16,40 @@ void computeOverlay(std::vector<uint8_t>& overlay, const std::vector<uint8_t>& b
 	{ // Iterate over each pixel
 		uint32_t idx = i * 4;  // Start index of RGBA for this pixel
 
-		uint8_t alpha = 0;
+		uint16_t alpha = 0;
 
 		// Compute alpha per pixel by considering the smallest valid alpha across RGB channels
 		for (int c = 0; c < 3; c++)
 		{ // For R, G, B channels only
-			if (result[idx + c] != base[idx + c])
+			uint8_t res = result[idx + c];
+			uint8_t bas = base[idx + c];
+			if (result[idx + c] != bas)
 			{
-				double channel_alpha =
-					(result[idx + c] - base[idx + c]) /
-					(255.0 * (result[idx + c] > base[idx + c] ? 1.0 : -1.0));
-				alpha = std::max(alpha, static_cast<uint8_t>(std::clamp(channel_alpha * 2.0 * 255.0, 0.0, 255.0)));
+				alpha = 1;
+				double diff = std::abs(res - bas);
+				alpha = std::max((uint8_t)alpha, static_cast<uint8_t>(std::clamp(std::ceil(diff), 0.0, 255.0)));
 			}
 		}
 
 		if (alpha != 0)
 		{
-			// Compute overlay for each channel using the per-pixel alpha
-			for (int c = 0; c < 3; c++)
-			{ // R, G, B channels
-				overlay[idx + c] = static_cast<uint8_t>(
-					std::clamp((result[idx + c] - (1.0 - alpha / 255.0) * base[idx + c]) / (alpha / 255.0) + 0.5, 0.0, 255.0));
+			for (; alpha < 256; alpha++)
+			{
+				double delta = 0.0;
+				// Compute overlay for each channel using the per-pixel alpha
+				for (int c = 0; c < 3; c++)
+				{ // R, G, B channels
+					double revAlpha = (1.0 - alpha / 255.0);
+					double revBase = revAlpha * base[idx + c];
+					double dif = (result[idx + c] - revBase);
+					double val = dif * 255.0 / alpha;
+					uint8_t v = static_cast<uint8_t>(
+						std::clamp(std::ceil(val), 0.0, 255.0));
+					overlay[idx + c] = v;
+					delta += std::abs(result[idx + c] - (revBase + (alpha / 255.0) * v));
+				}
+				if (delta < 0.5)
+					break; // Found suitable alpha
 			}
 		}
 
